@@ -21,4 +21,11 @@ model Contact {
     phone  String?
     user   User    @relation(fields: [userId], references: [id])
     userId Int
+    labels Label[]
+}
+
+model Label {
+    id       Int       @id @default(autoincrement())
+    name     String
+    contacts Contact[]
 }

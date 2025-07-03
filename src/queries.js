@@ -1,7 +1,7 @@
 import { HttpError } from 'wasp/server'
 
 export const getContacts = async (args, context) => {
-  if (!context.user) { throw new HttpError(401) };
+  if (!context.user) { throw new HttpError(401) }
 
   return context.entities.Contact.findMany({
     where: {
@@ -14,11 +14,32 @@ export const getContact = async ({ id }, context) => {
   if (!context.user) { throw new HttpError(401) }
 
   const contact = await context.entities.Contact.findUnique({
-    where: { id }
+    where: { id, userId: context.user.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true
+    }
   });
 
   if (!contact) throw new HttpError(404, 'No contact with id ' + id);
-  if (contact.userId !== context.user.id) throw new HttpError(403, 'Contact does not belong to the authenticated user.');
 
   return contact;
+}
+
+export const getLabels = async (args, context) => {
+  if (!context.user) { throw new HttpError(401) }
+
+  const labels = await context.entities.Label.findMany({
+    where: {
+      contacts: {
+        some: {
+          userId: context.user.id
+        }
+      }
+    }
+  });
+
+  return labels;
 }
