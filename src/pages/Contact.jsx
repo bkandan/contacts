@@ -1,67 +1,102 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'wasp/client/router';
-import { useQuery, useAction, getContact, updateContact } from 'wasp/client/operations';
+import { useQuery, useAction, getContacts, updateContact, deleteContact } from 'wasp/client/operations';
 
 const ContactPage = () => {
   const { contactId } = useParams();
-  const { data: contact, isLoading, error } = useQuery(getContact, { id: parseInt(contactId) });
+  const { data: contacts, isLoading, error } = useQuery(getContacts);
   const updateContactFn = useAction(updateContact);
-
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const deleteContactFn = useAction(deleteContact);
+  
+  const [contact, setContact] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
 
   useEffect(() => {
-    if (contact) {
-      setName(contact.name);
-      setEmail(contact.email);
-      setPhone(contact.phone || '');
+    if (contacts) {
+      const foundContact = contacts.find(c => c.id === parseInt(contactId));
+      setContact(foundContact);
+      if (foundContact) {
+        setFormData({ name: foundContact.name, email: foundContact.email, phone: foundContact.phone || '' });
+      }
     }
-  }, [contact]);
+  }, [contacts, contactId]);
 
   if (isLoading) return 'Loading...';
   if (error) return 'Error: ' + error;
+  if (!contact) return 'Contact not found';
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
 
   const handleUpdateContact = () => {
-    updateContactFn({ id: contact.id, name, email, phone });
+    updateContactFn({ id: contact.id, updatedFields: formData });
+    setEditMode(false);
+  };
+
+  const handleDeleteContact = () => {
+    deleteContactFn({ contactId: contact.id });
   };
 
   return (
-    <div className='p-4 bg-white rounded-lg shadow-md'>
-      <h2 className='text-2xl font-bold mb-4'>Edit Contact</h2>
-      <div className='mb-4'>
-        <label className='block text-gray-700 text-sm font-bold mb-2'>Name</label>
-        <input
-          type='text'
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline'
-        />
-      </div>
-      <div className='mb-4'>
-        <label className='block text-gray-700 text-sm font-bold mb-2'>Email</label>
-        <input
-          type='email'
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline'
-        />
-      </div>
-      <div className='mb-4'>
-        <label className='block text-gray-700 text-sm font-bold mb-2'>Phone</label>
-        <input
-          type='tel'
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline'
-        />
-      </div>
-      <button
-        onClick={handleUpdateContact}
-        className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline'
-      >
-        Update Contact
-      </button>
+    <div className='p-4 bg-slate-50 rounded-lg'>
+      {editMode ? (
+        <div>
+          <input
+            type='text'
+            name='name'
+            value={formData.name}
+            onChange={handleInputChange}
+            className='block mb-2 p-2 border rounded'
+          />
+          <input
+            type='email'
+            name='email'
+            value={formData.email}
+            onChange={handleInputChange}
+            className='block mb-2 p-2 border rounded'
+          />
+          <input
+            type='text'
+            name='phone'
+            value={formData.phone}
+            onChange={handleInputChange}
+            className='block mb-2 p-2 border rounded'
+          />
+          <button
+            onClick={handleUpdateContact}
+            className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2'
+          >
+            Save
+          </button>
+          <button
+            onClick={() => setEditMode(false)}
+            className='bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded'
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <div>
+          <h2 className='text-2xl font-bold mb-4'>{contact.name}</h2>
+          <p className='mb-2'>Email: {contact.email}</p>
+          <p className='mb-2'>Phone: {contact.phone}</p>
+          <button
+            onClick={() => setEditMode(true)}
+            className='bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded mr-2'
+          >
+            Edit
+          </button>
+          <button
+            onClick={handleDeleteContact}
+            className='bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded'
+          >
+            Delete
+          </button>
+        </div>
+      )}
     </div>
   );
 };

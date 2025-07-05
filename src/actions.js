@@ -1,5 +1,5 @@
 import { HttpError } from 'wasp/server';
-import parseCsv from 'csv-parse/lib/sync';
+import { parseCsv } from '@src/utils/csvParser';
 
 export const createContact = async ({ name, email, phone }, context) => {
   if (!context.user) { throw new HttpError(401) };
@@ -9,9 +9,7 @@ export const createContact = async ({ name, email, phone }, context) => {
       name,
       email,
       phone,
-      user: {
-        connect: { id: context.user.id }
-      }
+      user: { connect: { id: context.user.id } }
     }
   });
 
@@ -26,16 +24,10 @@ export const updateContact = async (args, context) => {
   });
   if (contact.userId !== context.user.id) { throw new HttpError(403) };
 
-  const updatedContact = await context.entities.Contact.update({
+  return context.entities.Contact.update({
     where: { id: args.id },
-    data: {
-      name: args.name,
-      email: args.email,
-      phone: args.phone
-    }
+    data: args.updatedFields
   });
-
-  return updatedContact;
 }
 
 export const deleteContact = async ({ contactId }, context) => {
@@ -50,21 +42,17 @@ export const deleteContact = async ({ contactId }, context) => {
     where: { id: contactId }
   });
 
-  return { success: true };
+  return contactId;
 }
 
-export const uploadContactsCsv = async (args, context) => {
+export const uploadContacts = async (args, context) => {
   if (!context.user) { throw new HttpError(401) };
 
-  const csvData = args.csvData;
-  const parsedContacts = parseCsv(csvData);
-  const createdContacts = [];
+  const { csvData } = args;
+  const contacts = parseCsv(csvData);
 
-  for (const contact of parsedContacts) {
-    if (!contact.name || !contact.email) {
-      throw new HttpError(400, 'Each contact must have a name and email.');
-    }
-  
+  const createdContacts = [];
+  for (const contact of contacts) {
     const newContact = await context.entities.Contact.create({
       data: {
         name: contact.name,
@@ -73,9 +61,8 @@ export const uploadContactsCsv = async (args, context) => {
         user: { connect: { id: context.user.id } }
       }
     });
-
     createdContacts.push(newContact);
   }
 
   return createdContacts;
-}
+};

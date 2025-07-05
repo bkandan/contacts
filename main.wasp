@@ -27,7 +27,7 @@ page SignupPage {
 
 action createContact {
   fn: import { createContact } from "@src/actions.js",
-  entities: [Contact, User]
+  entities: [Contact]
 }
 
 action updateContact {
@@ -40,18 +40,13 @@ action deleteContact {
   entities: [Contact]
 }
 
-action uploadContactsCsv {
-  fn: import { uploadContactsCsv } from "@src/actions.js",
+action uploadContacts {
+  fn: import { uploadContacts } from "@src/actions.js",
   entities: [Contact, User]
 }
 
 query getContacts {
   fn: import { getContacts } from "@src/queries.js",
-  entities: [Contact]
-}
-
-query getContact {
-  fn: import { getContact } from "@src/queries.js",
   entities: [Contact]
 }
 
@@ -69,11 +64,5 @@ page DashboardPage {
 route ContactRoute { path: "/contact/:contactId", to: ContactPage }
 page ContactPage {
   component: import ContactPage from "@src/pages/Contact.jsx",
-  authRequired: true
-}
-
-route UploadContactsRoute { path: "/upload-contacts", to: UploadContactsPage }
-page UploadContactsPage {
-  component: import UploadContactsPage from "@src/pages/UploadContacts.jsx",
   authRequired: true
 }

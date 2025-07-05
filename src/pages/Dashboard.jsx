@@ -1,65 +1,107 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useQuery, useAction } from 'wasp/client/operations';
+import { getContacts, getLabels, createContact, deleteContact, uploadContacts } from 'wasp/client/operations';
 import { Link } from 'wasp/client/router';
-import { useQuery } from 'wasp/client/operations';
-import { getContacts, getLabels } from 'wasp/client/operations';
 
 const DashboardPage = () => {
-  const { data: contacts, isLoading: isLoadingContacts, error: contactsError } = useQuery(getContacts);
-  const { data: labels, isLoading: isLoadingLabels, error: labelsError } = useQuery(getLabels);
+  const { data: contacts, isLoading: contactsLoading, error: contactsError } = useQuery(getContacts);
+  const { data: labels, isLoading: labelsLoading, error: labelsError } = useQuery(getLabels);
+  const createContactFn = useAction(createContact);
+  const deleteContactFn = useAction(deleteContact);
+  const uploadContactsFn = useAction(uploadContacts);
 
-  if (isLoadingContacts || isLoadingLabels) return 'Loading...';
-  if (contactsError) return 'Error fetching contacts: ' + contactsError;
-  if (labelsError) return 'Error fetching labels: ' + labelsError;
+  const [newContact, setNewContact] = useState({ name: '', email: '', phone: '' });
+  const [csvData, setCsvData] = useState('');
+
+  if (contactsLoading || labelsLoading) return 'Loading...';
+  if (contactsError) return 'Error loading contacts: ' + contactsError;
+  if (labelsError) return 'Error loading labels: ' + labelsError;
+
+  const handleCreateContact = () => {
+    createContactFn(newContact);
+    setNewContact({ name: '', email: '', phone: '' });
+  };
+
+  const handleUploadContacts = () => {
+    uploadContactsFn({ csvData });
+    setCsvData('');
+  };
 
   return (
     <div className='p-4'>
-      <div className='mb-6'>
-        <h2 className='text-2xl font-bold mb-4'>Contacts</h2>
-        {contacts.map((contact) => (
-          <div
-            key={contact.id}
-            className='flex items-center justify-between bg-gray-100 p-4 mb-4 rounded-lg'
+      <div className='mb-4'>
+        <h2 className='text-2xl font-bold mb-2'>Contacts</h2>
+        <div className='flex gap-x-4 mb-4'>
+          <input
+            type='text'
+            placeholder='Name'
+            className='px-2 py-1 border rounded'
+            value={newContact.name}
+            onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+          />
+          <input
+            type='email'
+            placeholder='Email'
+            className='px-2 py-1 border rounded'
+            value={newContact.email}
+            onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
+          />
+          <input
+            type='text'
+            placeholder='Phone'
+            className='px-2 py-1 border rounded'
+            value={newContact.phone}
+            onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
+          />
+          <button
+            onClick={handleCreateContact}
+            className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded'
           >
-            <div>{contact.name}</div>
-            <div>{contact.email}</div>
+            Add Contact
+          </button>
+        </div>
+        <div className='flex gap-x-4 mb-4'>
+          <textarea
+            placeholder='CSV Data'
+            className='px-2 py-1 border rounded w-full'
+            value={csvData}
+            onChange={(e) => setCsvData(e.target.value)}
+          />
+          <button
+            onClick={handleUploadContacts}
+            className='bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded'
+          >
+            Upload CSV
+          </button>
+        </div>
+        {contacts.map((contact) => (
+          <div key={contact.id} className='flex justify-between items-center bg-gray-100 p-2 mb-2 rounded'>
             <div>
-              <Link
-                to={`/contact/${contact.id}`}
-                className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded'
+              <Link to={`/contact/${contact.id}`} className='text-blue-500 hover:underline'>
+                {contact.name}
+              </Link> - {contact.email} - {contact.phone}
+            </div>
+            <div>
+              <button
+                onClick={() => deleteContactFn({ contactId: contact.id })}
+                className='bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded'
               >
-                View
-              </Link>
-              <Link
-                to={`/contact/edit/${contact.id}`}
-                className='bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded ml-2'
-              >
-                Edit
-              </Link>
+                Delete
+              </button>
             </div>
           </div>
         ))}
-        <Link
-          to="/contact/new"
-          className='bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded'
-        >
-          Add New Contact
-        </Link>
       </div>
       <div>
-        <h2 className='text-2xl font-bold mb-4'>Labels</h2>
-        <div className='flex flex-wrap gap-2'>
-          {labels.map((label) => (
-            <span
-              key={label.id}
-              className='bg-purple-500 text-white py-1 px-3 rounded-full'
-            >
-              {label.name}
-            </span>
-          ))}
-        </div>
+        <h2 className='text-2xl font-bold mb-2'>Labels</h2>
+        {labels.map((label) => (
+          <div key={label.id} className='bg-slate-100 p-2 mb-2 rounded'>
+            {label.name}
+          </div>
+        ))}
       </div>
     </div>
   );
-}
+};
 
 export default DashboardPage;

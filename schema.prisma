@@ -12,6 +12,7 @@ generator client {
 model User {
     id       Int       @id @default(autoincrement())
     contacts Contact[]
+    labels   Label[]
 }
 
 model Contact {
@@ -27,5 +28,7 @@ model Contact {
 model Label {
     id       Int       @id @default(autoincrement())
     name     String
+    user     User      @relation(fields: [userId], references: [id])
+    userId   Int
     contacts Contact[]
 }
